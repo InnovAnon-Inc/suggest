@@ -17,31 +17,8 @@ var urls = {
   wikipedia: "https://en.wikipedia.org/w/api.php?action=opensearch&search=",
   finn: "https://www.finn.no/search/autocomplete/xhr?responseType=json&searchKey=SEARCH_ID_BAP_ALL&term=",
   // TODO #7
-  //yelp: "https://www.yelp.com/search?src=opensearch&find_desc=",
-  //amazon: "https://completion.amazon.com/search/complete?method=completion&search-alias=aps&client=amazon-search-ui&mkt=1&q=",
-  //android: "https://market.android.com/suggest/SuggRequest?json=1&c=3&query=",
   //you: "https://you.com/api/ac?q=", // #7: cloudflare
-  //neeva: "https://neeva.com/suggest?src=opensearch&q=", // #7: defunct
 }
-
-var options = {
-  headers: {
-    'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Encoding' : 'gzip, deflate, br',
-    'Accept-Language' : 'en-US,en;q=0.5',
-    'Connection' : 'keep-alive',
-    'DNT' : '1',
-    'Host' : 'you.com',
-    'Sec-Fetch-Dest' : 'document',
-    'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
-    'Sec-Fetch-User' : '?1',
-    'Upgrade-Insecure-Requests' : '1',
-    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
-  }
-}
-
-const puppeteer = require('puppeteer');
 
 module.exports = class Suggest {
   constructor() {}
@@ -114,29 +91,9 @@ module.exports = class Suggest {
     return op.data.map(x=>x.suggest);
   }
 
-  //static async yelp(q) {
-  //  var op = await axios(urls.yelp + q, options);
-  //  return op.data // FIXME verboten
-  //}
-	
-  //static async amazon(q) {
-  //  var op = await axios(urls.amazon + q, options);
-  //  return op.data // FIXME needs html parsing ?
-  //}
-	
-  //static async android(q) {
-  //  var op = await axios(urls.android + q, options);
-  //  return op.data; // FIXME 404
-  //}
-
   //static async you(q) {
   //  var op = await axios(urls.you + q, options);
   //  return op.data[1] // FIXME needs cloudflare circumvention
-  //}
-
-  //static async neeva(q) {
-  //  var op = await axios(urls.neeva + q, options);
-  //  return op.data // defunct
   //}
 
   static async all(q) {
@@ -154,11 +111,7 @@ module.exports = class Suggest {
       ...await Suggest.ecosia(q),
       ...await Suggest.wikipedia(q),
       ...await Suggest.finn(q),
-      //...await Suggest.yelp(q),
-      //...await Suggest.amazon(q),
-      //...await Suggest.android(q),
       //...await Suggest.you(q),
-      //...await Suggest.neeva(q), // defunct
     ];
     return [...new Set(all)];
   }
