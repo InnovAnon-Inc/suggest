@@ -12,7 +12,36 @@ var urls = {
   swisscows: "https://swisscows.com/api/suggestion/suggest?query=",
   ask: "https://amg-ss.ask.com/query?q=",
   brave: "https://search.brave.com/api/suggest?q=",
+  // see: https://forum.vivaldi.net/topic/16991/guide-search-suggestion-url
+  ecosia: "https://ac.ecosia.org/autocomplete?q=", // Ecosia API endpoint
+  wikipedia: "https://en.wikipedia.org/w/api.php?action=opensearch&search=",
+  finn: "https://www.finn.no/search/autocomplete/xhr?responseType=json&searchKey=SEARCH_ID_BAP_ALL&term=",
+  // TODO #7
+  //yelp: "https://www.yelp.com/search?src=opensearch&find_desc=",
+  //amazon: "https://completion.amazon.com/search/complete?method=completion&search-alias=aps&client=amazon-search-ui&mkt=1&q=",
+  //android: "https://market.android.com/suggest/SuggRequest?json=1&c=3&query=",
+  you: "https://you.com/api/ac?q=", // #7
+  //neeva: "https://neeva.com/suggest?src=opensearch&q=", // #7: defunct
 }
+
+var options = {
+  headers: {
+    'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Encoding' : 'gzip, deflate, br',
+    'Accept-Language' : 'en-US,en;q=0.5',
+    'Connection' : 'keep-alive',
+    'DNT' : '1',
+    'Host' : 'you.com',
+    'Sec-Fetch-Dest' : 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User' : '?1',
+    'Upgrade-Insecure-Requests' : '1',
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+  }
+}
+
+const puppeteer = require('puppeteer');
 
 module.exports = class Suggest {
   constructor() {}
@@ -70,6 +99,75 @@ module.exports = class Suggest {
     return op.data[1];
   }
 
+  static async ecosia(q) {
+    var op = await axios(urls.ecosia + q);
+    return op.data.suggestions;
+  }
+
+  static async wikipedia(q) {
+    var op = await axios(urls.wikipedia + q);
+    return op.data[1]; // [3] has the links
+  }
+
+  static async finn(q) {
+    var op = await axios(urls.finn + q);
+    return op.data.map(x=>x.suggest);
+  }
+
+  //static async yelp(q) {
+  //  var op = await axios(urls.yelp + q, options);
+  //  return op.data // FIXME verboten
+  //}
+	
+  //static async amazon(q) {
+  //  var op = await axios(urls.amazon + q, options);
+  //  return op.data // FIXME needs html parsing ?
+  //}
+	
+  //static async android(q) {
+  //  var op = await axios(urls.android + q, options);
+  //  return op.data; // FIXME 404
+  //}
+
+  static async you(q) {
+    //var op = await axios(urls.you + q, options);
+    //return op.data[1] // FIXME needs cloudflare circumvention
+	  
+    // Launch the browser
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+
+    // Intercept network requests
+    await page.setRequestInterception(true);
+    page.on('request', (request) => {
+        request.continue();
+    });
+
+    // Listen for responses
+    page.on('response', async (response) => {
+        const url = response.url();
+        // Check if the response is from the You.com autocompletion endpoint
+        if (url.includes('/ac')) {
+            const jsonResponse = await response.json();
+            console.log('You.com Suggestions:', jsonResponse);
+            // You can process the jsonResponse as needed here
+	    // TODO hoow to return jsonResponse[1]
+        }
+    });
+
+    // Navigate to the You.com autocompletion URL
+    const query = 'example'; // Replace with your search query
+    await page.goto(`https://you.com/api/ac?q=${q}`, { waitUntil: 'networkidle2' });
+
+    // Close the browser
+    await browser.close();
+  }
+
+  //static async neeva(q) {
+  //  var op = await axios(urls.neeva + q, options);
+  //  return op.data // defunct
+  //}
+
   static async all(q) {
     var all = [
       ...await Suggest.google(q),
@@ -81,7 +179,15 @@ module.exports = class Suggest {
       ...await Suggest.dogpile(q),
       ...await Suggest.swisscows(q),
       ...await Suggest.ask(q),
-      ...await Suggest.brave(q)
+      ...await Suggest.brave(q),
+      ...await Suggest.ecosia(q),
+      ...await Suggest.wikipedia(q),
+      ...await Suggest.finn(q),
+      //...await Suggest.yelp(q),
+      //...await Suggest.amazon(q),
+      //...await Suggest.android(q),
+      ...await Suggest.you(q),
+      //...await Suggest.neeva(q), // defunct
     ];
     return [...new Set(all)];
   }
