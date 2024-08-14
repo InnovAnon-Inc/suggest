@@ -20,7 +20,7 @@ var urls = {
   //yelp: "https://www.yelp.com/search?src=opensearch&find_desc=",
   //amazon: "https://completion.amazon.com/search/complete?method=completion&search-alias=aps&client=amazon-search-ui&mkt=1&q=",
   //android: "https://market.android.com/suggest/SuggRequest?json=1&c=3&query=",
-  you: "https://you.com/api/ac?q=", // #7
+  //you: "https://you.com/api/ac?q=", // #7: cloudflare
   //neeva: "https://neeva.com/suggest?src=opensearch&q=", // #7: defunct
 }
 
@@ -129,39 +129,10 @@ module.exports = class Suggest {
   //  return op.data; // FIXME 404
   //}
 
-  static async you(q) {
-    //var op = await axios(urls.you + q, options);
-    //return op.data[1] // FIXME needs cloudflare circumvention
-	  
-    // Launch the browser
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-
-    // Intercept network requests
-    await page.setRequestInterception(true);
-    page.on('request', (request) => {
-        request.continue();
-    });
-
-    // Listen for responses
-    page.on('response', async (response) => {
-        const url = response.url();
-        // Check if the response is from the You.com autocompletion endpoint
-        if (url.includes('/ac')) {
-            const jsonResponse = await response.json();
-            console.log('You.com Suggestions:', jsonResponse);
-            // You can process the jsonResponse as needed here
-	    // TODO hoow to return jsonResponse[1]
-        }
-    });
-
-    // Navigate to the You.com autocompletion URL
-    const query = 'example'; // Replace with your search query
-    await page.goto(`https://you.com/api/ac?q=${q}`, { waitUntil: 'networkidle2' });
-
-    // Close the browser
-    await browser.close();
-  }
+  //static async you(q) {
+  //  var op = await axios(urls.you + q, options);
+  //  return op.data[1] // FIXME needs cloudflare circumvention
+  //}
 
   //static async neeva(q) {
   //  var op = await axios(urls.neeva + q, options);
@@ -186,7 +157,7 @@ module.exports = class Suggest {
       //...await Suggest.yelp(q),
       //...await Suggest.amazon(q),
       //...await Suggest.android(q),
-      ...await Suggest.you(q),
+      //...await Suggest.you(q),
       //...await Suggest.neeva(q), // defunct
     ];
     return [...new Set(all)];
